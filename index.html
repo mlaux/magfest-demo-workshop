@@ -67,15 +67,15 @@
         };
 
         const calcAngleTable = (w, h) => {
-          for (let x = 0; x < w; x++) {
-            for (let y = 0; y < h; y++) {
-              const xw = (x - w / 2.0);
-              const yh = (y - h / 2.0);
-              // atan2(y,x) returns an angle in range [-π, π] for x axis and a given point
-              const angle = Math.trunc((0.5 * texW * (atan2Normalized(yh, xw) / Math.PI)));
-              angleTable[y * screenW + x] = angle;
+            for (let x = 0; x < w; x++) {
+                for (let y = 0; y < h; y++) {
+                    const xw = (x - w / 2.0);
+                    const yh = (y - h / 2.0);
+                    // atan2(y,x) returns an angle in range [-π, π] for x axis and a given point
+                    const angle = Math.trunc((0.5 * texW * (atan2Normalized(yh, xw) / Math.PI)));
+                    angleTable[y * screenW + x] = angle;
+                }
             }
-          }
         };
 
         calcTexture(0, 0);
