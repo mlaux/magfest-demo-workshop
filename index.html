@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+  <title>MAGFest Demoscene Workshop</title>
+    <style type="text/css">
+        canvas {
+            border: 1px solid black;
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="mycanvas" width="640" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('mycanvas');
+        const ctx = canvas.getContext('2d');
+
+        const screenW = canvas.width;
+        const screenH = canvas.height;
+
+        const img = ctx.getImageData(0, 0, screenW, screenH);
+        const buf = new ArrayBuffer(img.data.length);
+        const buf8 = new Uint8ClampedArray(buf, 0, img.data.length);
+        const data = new Uint32Array(buf);
+
+        const texW = 256;
+        const texH = 256;
+
+        let frameCount = 0;
+
+        const angleTable = new Uint8Array(screenW * screenH);
+        const distTable = new Uint8Array(screenW * screenH);
+        const texture = new Uint8Array(texW * texH);
+
+        const putPixel = (x, y, r, g, b, a = 255) => {
+            data[y * screenW + x] = (a << 24) + (b << 16) + (g << 8) + (r << 0);
+        };
+
+        const calcTexture = (x = 0, y = 0) => {
+            for (let i = y, a = 0; i < texH + y; i++, a++) {
+                for (let j = x, b = 0; j < texW + x; j++, b++) {
+                    const col = (a * 256 / texW) ^ (b * 256 / texH);
+                    texture[i * texW + j] = col;
+                }
+            }
+        };
+
+        const calcDistTable = (w, h) => {
+            const ratio = 32.0;
+
+            for (let x = 0; x < w; x++) {
+                for (let y = 0; y < h; y++) {
+                    const xw = (x - w / 2.0);
+                    const yh = (y - h / 2.0);
+                    const dist = Math.trunc((ratio * texH / Math.sqrt(xw * xw + yh * yh)) % texH);
+                    distTable[y * screenW + x] = dist;
+                }
+            }
+        };
+
+        const atan2Normalized = (y, x) => {
+            let result = Math.atan2(y, x);
+            if (result < 0) {
+                result += (2.0 * Math.PI);
+            }
+            return result;
+        };
+
+        const calcAngleTable = (w, h) => {
+          for (let x = 0; x < w; x++) {
+            for (let y = 0; y < h; y++) {
+              const xw = (x - w / 2.0);
+              const yh = (y - h / 2.0);
+              // atan2(y,x) returns an angle in range [-π, π] for x axis and a given point
+              const angle = Math.trunc((0.5 * texW * (atan2Normalized(yh, xw) / Math.PI)));
+              angleTable[y * screenW + x] = angle;
+            }
+          }
+        };
+
+        calcTexture(0, 0);
+        calcAngleTable(screenW, screenH);
+        calcDistTable(screenW, screenH);
+
+        const drawTunnel = () => {
+            const xCenter = screenW / 2;
+            const yCenter = screenH / 2;
+
+            const shiftX = frameCount;
+            const shiftY = 0;
+
+            for (let y = 0; y < screenH; y++) {
+                for (let x = 0; x < screenW; x++) {
+                    const index = y * screenW + x;
+                    const tx = Math.trunc((distTable[index] + shiftX) % texW);
+                    const ty = Math.trunc((angleTable[index] + shiftY) % texH);
+                    const col = texture[ty * texW + tx];
+                    putPixel(x, y, col, col, col);
+                }
+            }
+
+            img.data.set(buf8);
+            ctx.putImageData(img, 0, 0);
+
+            requestAnimationFrame(drawTunnel);
+            frameCount++;
+        };
+
+        drawTunnel();
+
+    </script>
+</body>
+</html>
